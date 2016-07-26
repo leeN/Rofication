@@ -27,11 +27,11 @@ def format_message(message, is_urgent, count):
     # body = strip_tags(message.body.replace("\n"," "))
     return "<span color='{app_color}'>{application}</span>: <span color='{text_color}'>{summary}</span> <span color='{icon_color}'>{icon} {count}</span>".format(app_color = app_color, application=application, text_color= text_color, summary=summary, icon_color=icon_color, icon=icon, count=count)
 
-def send_command(cmd):
+def send_command(command):
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     client.connect("/tmp/rofi_notification_daemon")
-    #print("Send: {cmd}".format(cmd=cmd))
-    client.send(bytes(cmd, 'utf-8'))
+    #print("Send: {command}".format(command=command))
+    client.send(bytes(command, 'utf-8'))
     client.close()
 
 def linesplit(sock):
