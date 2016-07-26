@@ -16,14 +16,16 @@ def format_message(message, is_urgent, count):
         icon = ''
         app_color = '#5fafdf'
         text_color = '#8a8a8a'
+        icon_color = '#5fafdf'
     else:
         icon = ''
         app_color = '#cc211d'
         text_color = '#df875f'
+        icon_color = '#cc211d'
     summary = strip_tags(message.summary)
     application = strip_tags(message.application)
     # body = strip_tags(message.body.replace("\n"," "))
-    return "<span color='{app_color}'>{application}</span>: <span color='{text_color}'>{summary}</span> {icon} {count}".format(app_color = app_color, application=application, text_color= text_color, summary=summary, icon=icon, count=count)
+    return "<span color='{app_color}'>{application}</span>: <span color='{text_color}'>{summary}</span> <span color='{icon_color}'>{icon} {count}</span>".format(app_color = app_color, application=application, text_color= text_color, summary=summary, icon_color=icon_color, icon=icon, count=count)
 
 def send_command(cmd):
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -54,43 +56,44 @@ client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 client.connect("/tmp/rofi_notification_daemon")
 client.sendall(bytes("list", 'utf-8'))
 
-msgs = []
+messages = []
 urgent = []
-low = []
-for a in linesplit(client):
-    if len(a) > 0:
-        msg = jsonpickle.decode(a)
-        msgs.append(msg)
-        if Urgency(msg.urgency) is Urgency.critical:
-            urgent.append(msg)
-        if Urgency(msg.urgency) is Urgency.low:
-            low.append(msg)
+#low = []
+for line in linesplit(client):
+    if len(line) > 0:
+        message = jsonpickle.decode(line)
+        messages.append(message)
+        if Urgency(message.urgency) is Urgency.critical:
+            urgent.append(message)
+#        if Urgency(message.urgency) is Urgency.low:
+#            low.append(message)
 client.close()
-if len(msgs) == 0:
+message_count = len(messages)
+if message_count == 0:
     print('')
     print('')
     exit(0)
 
 urgent_count = len(urgent)
 if urgent_count > 0:
-    top = urgent[-1]
+    message_top = urgent[-1]
     is_urgent = True
-    ret_code = 33
+    return_code = 0
 else:
-    top = msgs[-1]
+    message_top = messages[-1]
     is_urgent = False
-    ret_code = 0
+    return_code = 0
 
 mouse_button = os.getenv("BLOCK_BUTTON")
 if mouse_button:
     if mouse_button in ["1", "2"]:
-        cmd = "del:{mid}".format(mid=top.mid)
-        send_command(cmd)
+        command_text = "del:{message_id}".format(message_id=message_top.mid)
+        send_command(command_text)
     elif mouse_button in ["3"]:
-        cmd = "dela:{app}".format(app=top.application)
-        send_command(cmd)
+        command_text = "dela:{application}".format(application=message_top.application)
+        send_command(command_text)
 
-
-print(format_message(top, is_urgent, len(msgs)))
-print(format_message(top, is_urgent, len(msgs)))
-exit(ret_code)
+message_out = format_message(message_top, is_urgent, message_count)
+print(message_out)
+print(message_out)
+exit(return_code)
