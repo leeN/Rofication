@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 import threading
+import signal
 import time
 import socket
 import json
@@ -26,8 +27,16 @@ single_notification_app=[ "VLC media player" ]
 """
     A list of applications that are allowed to expire.
 """
-allowed_expire_app=[ ]
+allowed_expire_app = []
 
+
+def notify_i3_blocks(signal_number=15):
+    process = subprocess.Popen(['pgrep', 'i3blocks'], stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+    stdout, notused = process.communicate()
+    for spid in stdout.splitlines():
+        pid = int(spid)
+        os.kill(pid, signal.SIGRTMIN+signal_number)
 
 class Rofication(threading.Thread):
 
@@ -51,6 +60,7 @@ class Rofication(threading.Thread):
             if self.last_id < noti.mid:
                 self.last_id = int(noti.mid)
         print("Found last id: {nid}".format(nid=nf._id))
+        notify_i3_blocks()
 
     def save(self):
         print("Saving rofication")
@@ -69,6 +79,7 @@ class Rofication(threading.Thread):
             for no in n:
                 print("{mid} expired.".format(mid=no.mid))
                 self.notification_queue.remove(no)
+        notify_i3_blocks()
 
     def remove_notification(self,id):
         printf("Removing: {}".format(id))
@@ -76,6 +87,7 @@ class Rofication(threading.Thread):
             n = [ n for n in self.notification_queue_lock if n.notid == id ]
             for no in n:
                 print("Closing: {id}:{sum}".format(id=no.mid, sum=no.application))
+        notify_i3_blocks()
 
     def add_notification(self,notif):
         with self.notification_queue_lock:
@@ -85,6 +97,7 @@ class Rofication(threading.Thread):
                     self.notification_queue.remove(no)
 
             self.notification_queue.append(notif)
+        notify_i3_blocks()
 
     """
         Communication command.
@@ -102,6 +115,7 @@ class Rofication(threading.Thread):
                 if noti.mid == int(arg):
                     self.notification_queue.remove(noti)
                     break
+        notify_i3_blocks()
     def communication_command_delete_apps(self, connection, arg):
         remove_q = []
         with self.notification_queue_lock:
@@ -110,6 +124,7 @@ class Rofication(threading.Thread):
                     remove_q.append(noti);
             for noti in remove_q:
                 self.notification_queue.remove(noti)
+        notify_i3_blocks()
 
     def communication_command_saw(self, connection, arg):
         with self.notification_queue_lock:
@@ -117,6 +132,7 @@ class Rofication(threading.Thread):
                 if noti.mid == int(arg):
                     noti.urgency = int(Urgency.normal)
                     break
+        notify_i3_blocks()
 
     def communication_command_num(self, connection):
         with self.notification_queue_lock:
