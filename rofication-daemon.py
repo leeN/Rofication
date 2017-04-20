@@ -75,16 +75,16 @@ class Rofication(threading.Thread):
     def update_queue(self):
         with self.notification_queue_lock:
             now = time.time()
-            n = [ n for n in self.notification_queue if n.application in allowed_expire_app and n.deadline > 0 and n.deadline < now ];
+            n = [n for n in self.notification_queue if n.application in allowed_expire_app and n.deadline > 0 and n.deadline < now]
             for no in n:
                 print("{mid} expired.".format(mid=no.mid))
                 self.notification_queue.remove(no)
         notify_i3_blocks()
 
     def remove_notification(self,id):
-        printf("Removing: {}".format(id))
+        print("Removing: {}".format(id))
         with self.notification_queue_lock:
-            n = [ n for n in self.notification_queue_lock if n.notid == id ]
+            n = [n for n in self.notification_queue if n.notid == id]
             for no in n:
                 print("Closing: {id}:{sum}".format(id=no.mid, sum=no.application))
         notify_i3_blocks()
